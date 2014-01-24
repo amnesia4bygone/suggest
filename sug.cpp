@@ -17,7 +17,7 @@
 #include <string>
 #include <algorithm>
 
-#include "cn2py.h"
+#include "py.h"
 #include "md5_64bit.h"
 #include "pool.h"
 
