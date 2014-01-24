@@ -8,7 +8,6 @@
 
 
 THash cn2py_segment::table_cn2py = THash();
-THash cn2py_segment::table_cn2mpy_prob = THash();
 int cn2py_segment:: init_flag = 0;
 
 
@@ -21,13 +20,13 @@ typedef enum
 }char_type;
 
 
-// ÅĞ¶Ïp¿ªÍ·Î»ÖÃµÄ×Ö·ûºÅ, ÊÇÊ²Ã´ÀàĞÍ. 
+// åˆ¤æ–­på¼€å¤´ä½ç½®çš„å­—ç¬¦å·, æ˜¯ä»€ä¹ˆç±»å‹. 
 // -1, error
 // 0, eng char
 // 1, cn char
 // 
-// GBK±àÂë
-// cn_char ×öµÄ±È½Ï´Ö²Ú, ¿ÉÄÜ»áÓĞÒ»Ğ©°ë¸öºº×ÖµÄÎÊÌâ. ÒÔ¼°È«½ÇµÄ·ûºÅ. Ï£ÍûÇ°Ì¨´¦Àí¸É¾»µô. 
+// GBKç¼–ç 
+// cn_char åšçš„æ¯”è¾ƒç²—ç³™, å¯èƒ½ä¼šæœ‰ä¸€äº›åŠä¸ªæ±‰å­—çš„é—®é¢˜. ä»¥åŠå…¨è§’çš„ç¬¦å·. å¸Œæœ›å‰å°å¤„ç†å¹²å‡€æ‰. 
 // TODO:
 char_type is_cn_en(const char * p)
 {
@@ -38,8 +37,8 @@ char_type is_cn_en(const char * p)
 }
 
 
-// ·µ»ØsegmentµÄbyteÊı
-// ÕâÀïÎªÁË¼òµ¥´¦Àí, Ã¿¸öºº×Ö×÷ÎªÒ»¸ösegment. ·½±ãºóĞøµÄ´¦Àí
+// è¿”å›segmentçš„byteæ•°
+// è¿™é‡Œä¸ºäº†ç®€å•å¤„ç†, æ¯ä¸ªæ±‰å­—ä½œä¸ºä¸€ä¸ªsegment. æ–¹ä¾¿åç»­çš„å¤„ç†
 unsigned int search_segment_len(const char * p, char_type type)
 {
         char * pos = (char*) p;
@@ -104,7 +103,7 @@ int cn2py_segment::split_query_segment(const char * p)
 
 
 
-// value×÷Îª×Ö·û´®´æ, ÓĞÁ½¸ö¿¼ÂÇ: 1, value±È½ÏÁé»î. 2, ²»ĞèÒª¿¼ÂÇdump, ¶¯Ì¬¼ÓÔØcharÀàĞÍ
+// valueä½œä¸ºå­—ç¬¦ä¸²å­˜, æœ‰ä¸¤ä¸ªè€ƒè™‘: 1, valueæ¯”è¾ƒçµæ´». 2, ä¸éœ€è¦è€ƒè™‘dump, åŠ¨æ€åŠ è½½charç±»å‹
 int cn2py_segment::fullfil_hash(const char * file_name, THash &table)
 {
 
@@ -168,21 +167,12 @@ int cn2py_segment::fullfil_hash(const char * file_name, THash &table)
 }
 
 
-// È«¾Ö³õÊ¼»¯µÄÊ±ºòÊ¹ÓÃ
+// å…¨å±€åˆå§‹åŒ–çš„æ—¶å€™ä½¿ç”¨
 void cn2py_segment::load_dict(void)
 {
     table_cn2py.set_empty_key(0);
-    table_cn2mpy_prob.set_empty_key(0);
 
     fullfil_hash(file_cn2py, table_cn2py);
-    //fprintf(stderr, "load dict half\n");
-    fullfil_hash(file_cn2mpy, table_cn2mpy_prob);
-
-    //fprintf(stderr, "load dict over\n");
-
-    
-
-    //fprintf(stderr, "test1 --%s--\n", table_cn2py[first_half_md5("³¯", 2)]);
 
 }
 
@@ -202,7 +192,7 @@ void cn2py_segment::debug(void)
 }
 
 
-// memset±È½ÏÏûºÄcpu,¿ÉÒÔÓÅ»¯ //TODO:
+// memsetæ¯”è¾ƒæ¶ˆè€—cpu,å¯ä»¥ä¼˜åŒ– //TODO:
 void cn2py_segment::clear(void)
 {
     query_segment_number = 0;
@@ -216,20 +206,12 @@ void cn2py_segment::clear(void)
 }
 
 
-// memset±È½ÏÏûºÄcpu,¿ÉÒÔÓÅ»¯ //TODO:
-void cn2py_segment::clear_miss(void)
-{
-    
-    py_miss_result_number = 0;
-
-    memset(py_miss_result_str, 0 , sizeof(py_miss_result_str));
-}
 
 
 
 cn2py_segment::cn2py_segment()
 {
-    //¸÷¸ö²ÎÊı×öÒ»ÏÂclear
+    //å„ä¸ªå‚æ•°åšä¸€ä¸‹clear
     query_segment_number = 0;
     py_result_number = 0;
     py_miss_result_number = 0;
@@ -239,10 +221,7 @@ cn2py_segment::cn2py_segment()
     memset(py_miss_result_str, 0, sizeof(py_miss_result_str));
 
     memset(file_cn2py, 0, 32);
-    memset(file_cn2mpy, 0, 32);
-
-    strcpy(file_cn2py, "./data/char.p");
-    strcpy(file_cn2mpy, "./data/char.m");
+    strcpy(file_cn2py, "./conf/char.p");
 
     if (init_flag == 0)
     {
@@ -253,7 +232,7 @@ cn2py_segment::cn2py_segment()
 
 cn2py_segment::cn2py_segment(const char * q)
 {
-    //¸÷¸ö²ÎÊı×öÒ»ÏÂclear
+    //å„ä¸ªå‚æ•°åšä¸€ä¸‹clear
     query_segment_number = 0;
     py_result_number = 0;
     py_miss_result_number = 0;
@@ -270,57 +249,37 @@ cn2py_segment::cn2py_segment(const char * q)
 }
 
 
-int cn2py_segment::cn2py_init(const char * q)
-{
-    //¸÷¸ö²ÎÊı×öÒ»ÏÂclear
-    query_segment_number = 0;
-    py_result_number = 0;
-    py_miss_result_number = 0;
-
-    memset(py_result_str, 0 , sizeof(py_result_str));
-    memset(query_segment_str, 0, sizeof(query_segment_str));
-    memset(py_miss_result_str, 0, sizeof(py_miss_result_str));
-
-
-    memset(query, 0, 128);
-    strcpy(query, q);
-
-    split_query_segment(query);
-
-    return 0;
-
-}
 
 cn2py_segment::~cn2py_segment()
 {
-    //¸÷¸ö²ÎÊı×öÒ»ÏÂclear
+    //å„ä¸ªå‚æ•°åšä¸€ä¸‹clear
     query_segment_number = 0;
     py_result_number = 0;
 
-    // ±éÀúÊı×é, ÊÍ·Å
+    // éå†æ•°ç»„, é‡Šæ”¾
 }
 
 
 
 
-// ¶¨Î»ÔÚµ¥¸ö×ÖµÄ×ªÆ´ÒôºÃÁË
+// å®šä½åœ¨å•ä¸ªå­—çš„è½¬æ‹¼éŸ³å¥½äº†
 int cn2py_segment::do_cn2py(void)
 {
-    // ºº×Ö×ªÆ´Òô, ÆäËûµÄ²»¶¯, ·Ö±ğ¸³Öµ¸ø¸÷¸ösegment´æ´¢
+    // æ±‰å­—è½¬æ‹¼éŸ³, å…¶ä»–çš„ä¸åŠ¨, åˆ†åˆ«èµ‹å€¼ç»™å„ä¸ªsegmentå­˜å‚¨
 
 
     //unsigned int mpy_number = 0;
 
 
-    // °´ÕÕsplitÇĞ·Ö×Ö, Êä³öpyµ½py_result_strÀïÃæ.
-    // ÕâÀï±È½ÏÀíÏëµÄ×ö·¨ÊÇÍ¼µÄÉî¶È±éÀú. µ«½ÏÎª¸´ÔÓ, ²»Èç±©Á¦Êä³ö
-     int py_str_number = 1; //Õâ¸ö¶¯Ì¬±ä»¯µÄ.
+    // æŒ‰ç…§splitåˆ‡åˆ†å­—, è¾“å‡ºpyåˆ°py_result_stré‡Œé¢.
+    // è¿™é‡Œæ¯”è¾ƒç†æƒ³çš„åšæ³•æ˜¯å›¾çš„æ·±åº¦éå†. ä½†è¾ƒä¸ºå¤æ‚, ä¸å¦‚æš´åŠ›è¾“å‡º
+     int py_str_number = 1; //è¿™ä¸ªåŠ¨æ€å˜åŒ–çš„.
     
     for (int i=0; i < query_segment_number; i++ )
     {
-        //fprintf(stderr, "\n\n\n --%s-- ÊÇµ±Ç°segment\n", query_segment_str[i]);    
+        //fprintf(stderr, "\n\n\n --%s-- æ˜¯å½“å‰segment\n", query_segment_str[i]);    
 
-        if( is_cn_en(query_segment_str[i]) == EN_CHAR ) // Ó¢ÎÄ´®,Ö±½Ócopy,¼òµ¥
+        if( is_cn_en(query_segment_str[i]) == EN_CHAR ) // è‹±æ–‡ä¸²,ç›´æ¥copy,ç®€å•
         {
             for(int j=0; j < py_str_number; j++)
             {
@@ -335,17 +294,17 @@ int cn2py_segment::do_cn2py(void)
 
 
         THashITE it;
-        //ÅĞ¶Ïµ±Ç°segment¶ÔÓ¦µÄµ¥¸öºº×Ö, ÊÇ·ñ¶àÒô×Ö
+        //åˆ¤æ–­å½“å‰segmentå¯¹åº”çš„å•ä¸ªæ±‰å­—, æ˜¯å¦å¤šéŸ³å­—
 
         unsigned long ids = first_half_md5(query_segment_str[i], 2);
         it = table_cn2mpy_prob.find( ids );
 
-        if (it != table_cn2mpy_prob.end() ) // ÊÇ¶àÒô×Ö
+        if (it != table_cn2mpy_prob.end() ) // æ˜¯å¤šéŸ³å­—
         {
 
-            //fprintf(stderr, "%s ÊÇ¸ö¶àÒô×Ö\n", query_segment_str[i]);    
-            // ÅĞ¶Ï¶àÒô×ÖµÄ¸öÊı, mpy_number
-            unsigned int mpy_number = 0; //ÎªÁË²Ù×÷·½±ã, Æ«ÒÆoffset·½Ãæ.ºóĞøÍ³¼ÆµÄÊ±ºòÒª+1
+            //fprintf(stderr, "%s æ˜¯ä¸ªå¤šéŸ³å­—\n", query_segment_str[i]);    
+            // åˆ¤æ–­å¤šéŸ³å­—çš„ä¸ªæ•°, mpy_number
+            unsigned int mpy_number = 0; //ä¸ºäº†æ“ä½œæ–¹ä¾¿, åç§»offsetæ–¹é¢.åç»­ç»Ÿè®¡çš„æ—¶å€™è¦+1
             char buffer[128];
             strncpy(buffer, table_cn2py[ids], 64 );
             buffer[127] = '\0';
@@ -360,7 +319,7 @@ int cn2py_segment::do_cn2py(void)
             {
                 p_next = strstr(p, "\t");
 
-                if (p_next == NULL) //×îºóÒ»¸ö¶àÒô×Öcopy¹ıÈ¥.
+                if (p_next == NULL) //æœ€åä¸€ä¸ªå¤šéŸ³å­—copyè¿‡å».
                 {
                     strcpy(mpy_segment[mpy_number], p);
                     break;
@@ -370,21 +329,21 @@ int cn2py_segment::do_cn2py(void)
                 mpy_number++;
             }
 
-            //fprintf(stderr, "¶àÒô×Ö¶ÔÓ¦µÄÆ´Òô¸öÊıÊÇ: %d\n", mpy_number);
+            //fprintf(stderr, "å¤šéŸ³å­—å¯¹åº”çš„æ‹¼éŸ³ä¸ªæ•°æ˜¯: %d\n", mpy_number);
             //for (int x=0; x<= mpy_number; x++)
             // printf("    %s\n", mpy_segment[x]);
 
-            if( ( (mpy_number+1) * py_str_number ) > 128 || mpy_number == 0 )   //±ÜÃâÒç³ö
+            if( ( (mpy_number+1) * py_str_number ) > 128 || mpy_number == 0 )   //é¿å…æº¢å‡º
             {
                 //_LOG(" mpy couse segment overflow or mpy==0\n");
                 //fprintf(stderr, "--%s--\n", query);
-                return -7; //µ½´ËÎªÖ¹°É.
+                return -7; //åˆ°æ­¤ä¸ºæ­¢å§.
             }
 
-            // copy Ä¿Ç°µÄbuffer
-            // Ä¿Ç°ÊÇpy_str_number(4)ĞĞ ,ĞèÒª * mpy_number(3)  
+            // copy ç›®å‰çš„buffer
+            // ç›®å‰æ˜¯py_str_number(4)è¡Œ ,éœ€è¦ * mpy_number(3)  
 
-            for (uint32 j=1; j<= mpy_number; j++) //µÚÒ»½Ú²»ĞèÒªcopy
+            for (uint32 j=1; j<= mpy_number; j++) //ç¬¬ä¸€èŠ‚ä¸éœ€è¦copy
             {
                 for (int k=0; k<py_str_number; k++) 
                 {
@@ -392,7 +351,7 @@ int cn2py_segment::do_cn2py(void)
                 }
             }
 
-            // ¶àÒô×ÖÒÔ py_str_number×÷Îªoffset, ¸³Öµ mpy_number±é
+            // å¤šéŸ³å­—ä»¥ py_str_numberä½œä¸ºoffset, èµ‹å€¼ mpy_numberé
             for (uint32 j=0; j<= mpy_number; j++)
             {
                 for (int k=0; k<py_str_number; k++) 
@@ -413,7 +372,7 @@ int cn2py_segment::do_cn2py(void)
         {
             it = table_cn2py.find( ids );
 
-            if (it == table_cn2py.end() ) //ÕâËµÃ÷,ÕâÊÇ¸öÖĞÎÄµÄ·ûºÅ, »òÕßÎŞ¶ÔÓ¦µÄÆ´ÒôÀ²
+            if (it == table_cn2py.end() ) //è¿™è¯´æ˜,è¿™æ˜¯ä¸ªä¸­æ–‡çš„ç¬¦å·, æˆ–è€…æ— å¯¹åº”çš„æ‹¼éŸ³å•¦
             {
                 for(int j=0; j < py_str_number; j++)
                 {
@@ -422,7 +381,7 @@ int cn2py_segment::do_cn2py(void)
             }
             else
             {
-                // »ñÈ¡ºº×Ö¶ÔÓ¦µÄÆ´Òô
+                // è·å–æ±‰å­—å¯¹åº”çš„æ‹¼éŸ³
                 for(int j=0; j < py_str_number; j++)
                 {
                     if ( (strlen(py_result_str[j]) + strlen(table_cn2py[ids]) ) > MAX_RESULT_BUFFER )
@@ -441,147 +400,6 @@ int cn2py_segment::do_cn2py(void)
 
 }
 
-/*
-int cn2py_segment::do_miss_seg_cn2py(unsigned int number=129)
-{
-    // ºº×Ö×ªÆ´Òô, ÆäËûµÄ²»¶¯, ·Ö±ğ¸³Öµ¸ø¸÷¸ösegment´æ´¢
-
-
-    unsigned int mpy_number = 0;
-
-
-
-    unsigned int py_str_number = 1; //Õâ¸ö¶¯Ì¬±ä»¯µÄ.
-    
-    for (int i=0; i < query_segment_number; i++ )
-    {
-        //fprintf(stderr, "\n\nn\n --%s-- ÊÇµ±Ç°segment\n", query_segment_str[i]); 
-
-        if (i==number)  continue;
-
-        if( is_cn_en(query_segment_str[i]) == EN_CHAR ) // Ó¢ÎÄ´®,Ö±½Ócopy,¼òµ¥
-        {
-            for(int j=0; j < py_str_number; j++)
-            {
-                if (   (strlen(py_result_str[j] + strlen(query_segment_str[i]) ) )  >  MAX_RESULT_BUFFER )
-                    return -1;
-
-
-                strncat(py_miss_result_str[j], query_segment_str[i],  strlen(query_segment_str[i]) );
-                //fprintf(stderr, "cp en segment --%s--\n", query_segment_str[i]);
-            }
-            continue;
-        }
-
-
-        THashITE it;
-        //ÅĞ¶Ïµ±Ç°segment¶ÔÓ¦µÄµ¥¸öºº×Ö, ÊÇ·ñ¶àÒô×Ö
-
-        unsigned long ids = first_half_md5(query_segment_str[i], 2);
-        it = table_cn2mpy_prob.find( ids );
-
-        if (it != table_cn2mpy_prob.end() ) // ÊÇ¶àÒô×Ö
-        {
-
-            //fprintf(stderr, "%s ÊÇ¸ö¶àÒô×Ö\n", query_segment_str[i]);  
-            // ÅĞ¶Ï¶àÒô×ÖµÄ¸öÊı, mpy_number
-            unsigned int mpy_number = 0; //ÎªÁË²Ù×÷·½±ã, Æ«ÒÆoffset·½Ãæ.ºóĞøÍ³¼ÆµÄÊ±ºòÒª+1
-            char buffer[128];
-            strncpy(buffer, table_cn2py[ids], 64 );
-            buffer[127] = '\0';
-            //fprintf(stderr, "%s--%s %d\n", table_cn2mpy_prob[ids], table_cn2py[ids], strlen(table_cn2py[ids]));
-            char * p = buffer;
-            char * p_next = buffer;
-
-            char mpy_segment[8][8];
-            memset(mpy_segment, 0, sizeof(mpy_segment));
-
-            while ( p_next )
-            {
-                p_next = strstr(p, "\t");
-
-                if (p_next == NULL) //×îºóÒ»¸ö¶àÒô×Öcopy¹ıÈ¥.
-                {
-                    strcpy(mpy_segment[mpy_number], p);
-                    break;
-                }
-                strncpy(mpy_segment[mpy_number], p, (unsigned int)(p_next - p)  );
-                p = p_next+1;
-                mpy_number++;
-            }
-
-            //fprintf(stderr, "¶àÒô×Ö¶ÔÓ¦µÄÆ´Òô¸öÊıÊÇ: %d\n", mpy_number);
-            //for (int x=0; x<= mpy_number; x++)
-            //  printf("    %s\n", mpy_segment[x]);
-
-            if( ( (mpy_number+1) * py_str_number ) > 128 || mpy_number == 0 )   //±ÜÃâÒç³ö
-            {
-                _LOG(" mpy couse segment overflow or mpy==0 \n");
-                //fprintf(stderr, "--%s--\n", query);
-                return -1; //µ½´ËÎªÖ¹°É.
-            }
-
-            // copy Ä¿Ç°µÄbuffer
-            // Ä¿Ç°ÊÇpy_str_number(4)ĞĞ ,ĞèÒª * mpy_number(3)  
-
-            for (int j=1; j<= mpy_number; j++) //µÚÒ»½Ú²»ĞèÒªcopy
-            {
-                for (int k=0; k<py_str_number; k++) 
-                {
-                    strncpy(py_miss_result_str[j*py_str_number + k], py_miss_result_str[k], MAX_RESULT_BUFFER-1);
-                    py_miss_result_str[j*py_str_number + k][MAX_RESULT_BUFFER-1] = '\0'; //TODO ¿ÉÄÜÓĞ°ë¸öºº×ÖµÄÎÊÌâ...
-                }
-            }
-
-            // ¶àÒô×ÖÒÔ py_str_number×÷Îªoffset, ¸³Öµ mpy_number±é
-            for (int j=0; j<= mpy_number; j++)
-            {
-                for (int k=0; k<py_str_number; k++) 
-                {
-                    if ( (strlen(py_result_str[k+j*py_str_number]) + strlen( mpy_segment[j]) )> MAX_RESULT_BUFFER   )
-                        return -1;
-
-                    strcat(py_miss_result_str[k+j*py_str_number], mpy_segment[j] );
-                }               
-            }
-
-            // update py_str_number
-            py_str_number = py_str_number * (mpy_number+1);
-
-        }
-        else
-        {
-            it = table_cn2py.find( ids );
-
-            if (it == table_cn2py.end() ) //ÕâËµÃ÷,ÕâÊÇ¸öÖĞÎÄµÄ·ûºÅ, »òÕßÎŞ¶ÔÓ¦µÄÆ´ÒôÀ²
-            {
-                for(int j=0; j < py_str_number; j++)
-                {
-                    strncat(py_result_str[j], query_segment_str[i], strlen(query_segment_str[i]) );
-                }
-            }
-            else
-            {
-                // »ñÈ¡ºº×Ö¶ÔÓ¦µÄÆ´Òô
-                for(int j=0; j < py_str_number; j++)
-                {
-                    if ( (strlen(py_result_str[j]) + strlen(table_cn2py[ids]) ) > MAX_RESULT_BUFFER )
-                        return -1;
-
-                    strcat(py_miss_result_str[j], table_cn2py[ids] );
-                }
-            }
-        }
-
-
-    }
-    py_miss_result_number = py_str_number;
-    return py_str_number;
-
-
-}
-
-*/
 
 
 #ifdef CN2PY_DEBUG

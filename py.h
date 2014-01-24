@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Õâ¸öÊ¹ÓÃµÄµØ·½±È½Ï¶à µ¥¶À´æºÃÁË
+// è¿™ä¸ªä½¿ç”¨çš„åœ°æ–¹æ¯”è¾ƒå¤š å•ç‹¬å­˜å¥½äº†
 #include <google/dense_hash_map>
 #include <openssl/md5.h>
 
@@ -23,7 +23,7 @@ using google::dense_hash_map;      // namespace where class lives by default
 //using std::endl;
 
 /*
-    ÈçÏÂÊÇ²âÊÔ´úÂë
+    å¦‚ä¸‹æ˜¯æµ‹è¯•ä»£ç 
 
     typedef unsigned long long uint64;
 
@@ -78,7 +78,7 @@ using google::dense_hash_map;      // namespace where class lives by default
 
 */
 
-
+/*
 
 enum
 {
@@ -87,60 +87,39 @@ enum
     MAX_RESULT_BUFFER = 256,
 };
 
+*/
 
 
-
-// ´æ´¢ºº×Öqueryµ½Æ´ÒôµÄ½á¹û. ÓÉÓÚ¶àÒô×ÖµÄ´æÔÚ, ËùÒÔ¶à¸ö½á¹û.
-// "ÁõµÄ»ª"µÄ½á¹û
+// å­˜å‚¨æ±‰å­—queryåˆ°æ‹¼éŸ³çš„ç»“æœ. ç”±äºå¤šéŸ³å­—çš„å­˜åœ¨, æ‰€ä»¥å¤šä¸ªç»“æœ.
+// "åˆ˜çš„å"çš„ç»“æœ
 //     "liudehua"  "liu" "de" "hua"
 //     "liudihua"  "liu" "di" "hua"
 //
-// "h&m ¹ÙÍø"
+// "h&m å®˜ç½‘"
 // 		"h&m guanwang"  "h&m "  "guan" "wang"
 // 
-// ¸ÅÂÊ±íÓĞ. ÔİÊ±²»¿¼ÂÇÊ¹ÓÃ. ·Ç¶àÒô×Ö,Ö±½Ó³Ë1, ¶àÒô×Ö¶ÔÓ¦µÄ¸ÅÂÊ³ËÆğÀ´¼´¿É. 
+// æ¦‚ç‡è¡¨æœ‰. æš‚æ—¶ä¸è€ƒè™‘ä½¿ç”¨. éå¤šéŸ³å­—,ç›´æ¥ä¹˜1, å¤šéŸ³å­—å¯¹åº”çš„æ¦‚ç‡ä¹˜èµ·æ¥å³å¯. 
 class cn2py_segment
 {
     public:
-    	uint8 query_segment_number;
-    	uint8 py_result_number;
-        uint8 py_miss_result_number;
-
-    	char py_result_str[MAX_CNPY_NUMBER][MAX_RESULT_BUFFER]; //Ò»¸öquery,×î¶à·µ»ØÕâÃ´¶à¸öÇĞÆ´ÒôµÄ½á¹û
-    	char query_segment_str[MAX_CNPY_SEGMENT_NUMBER][MAX_RESULT_BUFFER]; //Ò»¸öºº×ÖµÄÆ´Òô×î¶à7¸ö×Ö½Ú. ÁôÒ»¸ö\0
-        char py_miss_result_str[MAX_CNPY_NUMBER][MAX_RESULT_BUFFER]; //Ò»¸öquery¶ªÒ»¸ösegment, ·µ»ØËûµÄÇĞÆ´ÒôµÄ½á¹û
-
-    	float py_str_prob[MAX_CNPY_SEGMENT_NUMBER]; 
-
-    	int do_cn2py();
-
-        // -1, number·Ç·¨ 
-        // 0, ÎŞ½á¹û
-        // n, result number
-        //
-        // number ´Ó0¿ªÊ¼¼ÆÊı
-        //int do_miss_seg_cn2py(unsigned int number); // intÊÇ¶ªµôµÄsegmentµÄĞòºÅ
+        vector<string> py_list;        
 
 
-    	cn2py_segment(); //ÎªÁËÏµÍ³³õÊ¼»¯´ÊµäÉè¼ÆµÄ
-        cn2py_segment(const char * query); //Ó¦¸ÃÊ¹ÓÃµÄÕâ¸ö½Ó¿Ú
+    	cn2py_segment(); //ä¸ºäº†ç³»ç»Ÿåˆå§‹åŒ–è¯å…¸è®¾è®¡çš„
+        cn2py_segment(const char * query); //åº”è¯¥ä½¿ç”¨çš„è¿™ä¸ªæ¥å£
         ~cn2py_segment();
-        int cn2py_init(const char * query);
 
-        void debug(void); // ´òÓ¡ÔªËØÏµÍ³ĞÅÏ¢
-        void clear(void); //Çá²Á³ı. ·½±ã¸´ÓÃ
-        void clear_miss(void); // Çá²Á³ımissµÄ½á¹û. ·½±ã¸´ÓÃ
+        void debug(void); // æ‰“å°å…ƒç´ ç³»ç»Ÿä¿¡æ¯
 
 
     private:
     	static THash table_cn2py;
-        static THash table_cn2mpy_prob;
         static int init_flag;
 
         char file_cn2py[32];
-        char file_cn2mpy[32] ;
 
         char query[128];
+        vector<string> word_list;
 
         void load_dict(void); 
         int fullfil_hash(const char * file_name, dense_hash_map<uint64, char *, OwnHash> &table);
@@ -150,8 +129,4 @@ class cn2py_segment
 
 
 
-// 0, no result
-// -1, error
-// >0, result number
-//int cn2py(const char * query, cn2py_segment& result );
 #endif
