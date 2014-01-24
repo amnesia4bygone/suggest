@@ -83,6 +83,13 @@ int cn2py_segment::do_cn2py(void)
                         uint64 id = first_half_md5(buf, this_len );
                         printf("%lld %s, %d\n", id, buf, this_len);
 
+                        THashITE it;
+                        it = table_cn2py.find(id);
+                        if (it == table_cn2py.end() )
+                        {
+                                printf("!!!!!!!!!!!!!!!!!miss word --%s--\n", buf);
+                                return -1;
+                        }
                         strcat(py_list, table_cn2py[id] ); 
                         cn_list.push_back( string( buf, this_len )  );
                 }
@@ -97,6 +104,8 @@ int cn2py_segment::do_cn2py(void)
         }
         if (py_word.length() > 0 )
             cn_list.push_back(py_word);
+
+        return cn_list.size();
         
 }
 
