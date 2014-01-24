@@ -1,0 +1,47 @@
+
+
+读入一行,  query \t freq
+
+
+"外套" -"^外套$"  过滤掉
+
+query 插入队列, 返回一个 id, 即 md5
+
+
+
+query转拼音, 丢弃多音字
+
+sample: "连衣裙 秋冬 新款"
+query 带空格和不带 query, 视为两个query. 哪个效果好, 则 
+两个队列建索引, 直接hashmap 搞定
+
+
+
+    py  按照前缀拆分,   lianyiqun  lianyiqu, 
+    py  按照后缀拆分, 空格为界限.   xinkuan,  qiudongxinkuan. slice, 然后 slice 内部前缀切分. 标记是后缀   
+
+
+    query 按照汉子前缀拆分.   "连"    "连衣"
+    query 按照汉字后缀拆分. 空格为界限.   "新款"   "秋冬 新款"  slice, 然后 slice 内部前缀切分.标记是后缀 
+
+
+    至此, 就有了 key, 和 query_id, key 要做 md5处理 ,
+
+    
+    插入到索引. densehashmap 里面存30个 id 即可.
+
+    class contents
+    {
+        uint64 lists[32];
+        uint32 score[32];  // 0, means not used, 
+        uint32 num; 
+        uint32 min_score;
+    };
+
+    typedef dense_hash_map<uint64, contents, OwnHash> MHash;
+    typedef dense_hash_map<uint64, contents, OwnHash>::iterator MHashITE;
+
+
+检索逻辑
+    key, find it.
+    和前缀去重,  空格不空格的去重. 预建库30个结果. 避免去重不足10个
