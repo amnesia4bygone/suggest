@@ -33,6 +33,38 @@
 
 using namespace std;
 
+
+
+class contents
+{
+public:
+    uint64 lists[32];
+    uint32 doota_num[32];  // 0, mean
+    uint32 search_num[32];  // 0, mean
+
+    uint32 used_num; 
+
+
+    int insert(uint64 query_id, uint32 doota, uint32 search);
+    contents();
+
+private:
+    uint32 min_doota;
+    uint32 min_doota_offset;
+    void find_min_offset(void);
+
+
+
+};
+
+
+
+
+typedef dense_hash_map<uint64, contents *, OwnHash> CHash;
+typedef dense_hash_map<uint64, contents *, OwnHash>::iterator CHashITE;
+
+
+
 const unsigned int MAX_LEN = 1024;
 const unsigned int THREAD_NUMBER =  24;
 
@@ -45,8 +77,8 @@ PendingPool g_workpool;
 int debug = 1;
 
 
-CHash g_index = CHash(10000000);
-
+CHash g_index =  CHash(10000000);
+THash g_querys = THash(10000000);
 
  
 const char response_head[] = "HTTP/1.1 200 OK\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Length: ";
@@ -489,13 +521,60 @@ void * child_main(void* )
 }    
 
 
-unsigned int insert_one_query(char * query, unsigned int doota, unsigned int search )
+
+contents::contents()
+{
+    memset(this, 0, sizeof(contents) );
+}
+
+
+void  contents::find_min_offset(void)
+{
+    unsigned int tmp_doota = 999999999;
+    for(uint32 i=0; i<32; i++ )
+    {
+        if (tmp_doota < doota_num[i] )
+        {
+            tmp_doota = doota_num[i];
+            min_doota_offset = i;
+        }
+    }   
+}
+// -1, error
+// 0, skip
+// 1, success insert
+int contents::insert(uint64 query_id, uint32 doota, uint32 search)
 {
 
+    if (used_num < 32)
+    {
+        lists[used_num] = query_id;
+        doota_num[used_num] = doota;
+        search_num[used_num] = search;
+        used_num++;
+
+        find_min_offset();
+        return 1;
+    }
+
+
+    if (doota <= min_doota )
+        return 0;
+
+    lists[min_doota_offset] = query_id;
+    doota_num[min_doota_offset] = doota;
+    search_num[min_doota_offset] = search;    
+    find_min_offset();
+    return 1;
+
+}
+
+
+unsigned int insert_one_query(char * query, unsigned int doota, unsigned int search )
+{
     vector<string> prefixs;
 
     
-
     cn2py_segment segment(query);
     segment.do_cn2py();
     segment.debug();
@@ -503,80 +582,65 @@ unsigned int insert_one_query(char * query, unsigned int doota, unsigned int sea
     char * p_head = (char*) (segment.py_list  );
     unsigned int query_len = strlen(p_head);
 
+    uint64 query_id = first_half_md5(query, strlen(query) ); 
+    char * new_query = (char * ) malloc(64);
+    memset(new_query, 0, 64);
+    strncpy(new_query, query, 63);
 
+    g_querys[query_id] = new_query; 
 
-    // 前缀 py 索引
-    for(unsigned int i=1 ; i<=query_len; i++ )
     {
-        
-        string one(p_head, i );
-
-        prefixs.push_back(one);
-
-        //printf("%%pre  %s\n",  one.c_str() );
-
-    }
-
-    // 中缀 py 索引
-
-    char * p_blank = strstr( p_head,  " ");
-    while(p_blank != NULL)
-    {
-        char * p_mid_py_query = p_blank+1;
-        unsigned int mid_py_query_len = strlen( p_mid_py_query );
-
-        for(unsigned int i = 1; i<=mid_py_query_len; i++)
+        // 前缀 py 索引
+        for(unsigned int i=1 ; i<=query_len; i++ )
         {
-            string one(p_mid_py_query, i );
+            
+            string one(p_head, i );
 
             prefixs.push_back(one);
 
-            //printf("%%mid  %s\n",  one.c_str() );            
+            //printf("%%pre  %s\n",  one.c_str() );
+
         }
 
-        p_blank = strstr( p_mid_py_query, " " );
+        // 中缀 py 索引
 
-    }
-
-    // 前缀 汉字索引
-    for (unsigned int i=1; i<= segment.cn_list.size(); i++)
-    {
-        string one;
-        for (unsigned int j =0; j<i; j++)
+        char * p_blank = strstr( p_head,  " ");
+        while(p_blank != NULL)
         {
-            one += segment.cn_list[j];
+            char * p_mid_py_query = p_blank+1;
+            unsigned int mid_py_query_len = strlen( p_mid_py_query );
+
+            for(unsigned int i = 1; i<=mid_py_query_len; i++)
+            {
+                string one(p_mid_py_query, i );
+
+                prefixs.push_back(one);
+
+                //printf("%%mid  %s\n",  one.c_str() );            
+            }
+
+            p_blank = strstr( p_mid_py_query, " " );
+
         }
-        prefixs.push_back(one);
-        printf("%%cn pre  --%s--\n",  one.c_str() );
 
-    }
-
-
-    // 中缀, 汉子索引
-    unsigned int offset = 0;
-    unsigned int current_offset = 0;
-    unsigned int cn_len = segment.cn_list.size();
-
-    while(current_offset < cn_len)
-    {
-        if (  0 == strncmp(segment.cn_list[current_offset].c_str() , " ", 1 ) )
-            break;
-
-        current_offset++;
-    }
-    current_offset++; // skip blank
-    offset = current_offset;
-
-    while(offset < cn_len)
-    {
-        for(unsigned int i=1; i<=cn_len - offset; i++  )
+        // 前缀 汉字索引
+        for (unsigned int i=1; i<= segment.cn_list.size(); i++)
         {
             string one;
-            for(unsigned int j=0; j<i; j++)
-                one += segment.cn_list[offset+j];
+            for (unsigned int j =0; j<i; j++)
+            {
+                one += segment.cn_list[j];
+            }
             prefixs.push_back(one);
-            printf("%%cn mid pre  --%s--\n",  one.c_str() );
+            printf("%%cn pre  --%s--\n",  one.c_str() );
+
         }
+
+
+        // 中缀, 汉子索引
+        unsigned int offset = 0;
+        unsigned int current_offset = 0;
+        unsigned int cn_len = segment.cn_list.size();
 
         while(current_offset < cn_len)
         {
@@ -584,38 +648,69 @@ unsigned int insert_one_query(char * query, unsigned int doota, unsigned int sea
                 break;
 
             current_offset++;
-        }  
-        offset = ++current_offset;     
+        }
+        current_offset++; // skip blank
+        offset = current_offset;
+
+        while(offset < cn_len)
+        {
+            for(unsigned int i=1; i<=cn_len - offset; i++  )
+            {
+                string one;
+                for(unsigned int j=0; j<i; j++)
+                    one += segment.cn_list[offset+j];
+                prefixs.push_back(one);
+                printf("%%cn mid pre  --%s--\n",  one.c_str() );
+            }
+
+            while(current_offset < cn_len)
+            {
+                if (  0 == strncmp(segment.cn_list[current_offset].c_str() , " ", 1 ) )
+                    break;
+
+                current_offset++;
+            }  
+            offset = ++current_offset;     
+        }
     }
 
 
 
+    if (debug)
+        for (unsigned int i =0; i<prefixs.size(); i++)
+            printf("---%s\n", prefixs[i].c_str() );
 
 
-    for (unsigned int i =0; i<prefixs.size(); i++)
-        printf("---%s\n", prefixs[i].c_str() );
 
-/*
-    CHashITE ite;
-
-    ite = g_index.find(id);
-    if (ite == g_index.end() )
+    for (unsigned int i=0; i<prefixs.size(); i++)
     {
-        centents * one = (contents *) malloc( sizeof(contents) );
+        CHashITE ite;
 
-    }
-    else
-    {
+        uint64 key_id = first_half_md5(prefixs[i].c_str(), strlen(prefixs[i].c_str() )  );
 
+        ite = g_index.find(key_id);
+        contents * one = NULL;
+        if (ite == g_index.end() )
+        {
+            one = (contents *) malloc( sizeof(contents) );
+            g_index[key_id] = one;
+        }
+        else
+        {
+            one = g_index[key_id];
+        }
+        one->insert(query_id, doota, search);
     }
-      */  
+    
+    return 0;
 }
 
 
 unsigned int build_index(void)
 {
-
     g_index.set_empty_key(0);
+    g_querys.set_empty_key(0);
+
 
     unsigned int len;
     int readed_lines = 0 ;
