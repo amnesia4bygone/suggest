@@ -2,20 +2,34 @@
 #ifndef __CONTENTS__
 #define __CONTENTS__
 
-
+#include <vector>
 #include "common_def.h"
+
+
+using namespace std;
+
+
+
+class one_query
+{
+public:
+    uint64 id;
+    uint32 doota;
+    uint32 search;
+
+    uint64 unique_id;
+    one_query();
+    
+};
+
 
 class contents
 {
 public:
-    uint64 lists[32];
-    uint32 doota_num[32];  // 0, mean
-    uint32 search_num[32];  // 0, mean
-
+    vector<one_query> lists;
     uint32 used_num; 
 
-
-    int insert(uint64 query_id, uint32 doota, uint32 search);
+    int insert(uint64 query_id, uint32 doota, uint32 search, uint64 uid); // uid is used skpi querys which only diff in blank
     contents();
     void debug(void);
 
@@ -23,9 +37,6 @@ private:
     uint32 min_doota;
     uint32 min_doota_offset;
     void find_min_offset(void);
-
-
-
 };
 
 

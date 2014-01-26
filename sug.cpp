@@ -486,12 +486,13 @@ void * child_main(void* )
 
                 for (unsigned int i =0; i < p->used_num; i++ )
                 {
-                    printf( "%d--%lld--%s--%d--%d\n" , 
+                    printf( "%d--%lld--%s--%d--%d--%lld\n" , 
                          i , 
-                         p->lists[i], 
-                         g_querys[ p->lists[i] ] , 
-                         p->doota_num[i], 
-                         p->search_num[i] );
+                         p->lists[i].id, 
+                         g_querys[ p->lists[i].id ] , 
+                         p->lists[i].doota, 
+                         p->lists[i].search,
+                         p->lists[i].unique_id );
                 }
             }
 
@@ -512,6 +513,30 @@ void * child_main(void* )
     return NULL;
 }    
 
+
+
+uint32 strip_blank ( char * query, char * new_query, uint32 len )
+{
+        char * p = query;
+        char * dest = new_query;
+        uint32 blank_number = 0;
+        for (uint32 i =0; i< len; i++)
+        {
+                if (*p != ' ')
+                {
+                        *dest = *p;
+                        p++;
+                        dest++;
+                }
+                else
+                {
+                        p++;
+                        blank_number++;
+                }
+        }
+        *dest = '\0';
+        return blank_number;
+}
 
 
 
@@ -627,6 +652,10 @@ unsigned int insert_one_query(char * query, unsigned int doota, unsigned int sea
 
 
 
+    char query_no_blank[64];
+    memset(query_no_blank, 0, sizeof(query_no_blank) );
+    strip_blank(query, query_no_blank, 64);
+    uint64 unique_id = first_half_md5(query_no_blank, strlen(query_no_blank) );
 
     for (unsigned int i=0; i<prefixs.size(); i++)
     {
@@ -645,7 +674,7 @@ unsigned int insert_one_query(char * query, unsigned int doota, unsigned int sea
         {
             one = g_index[key_id];
         }
-        int ret  = one->insert(query_id, doota, search);
+        int ret  = one->insert(query_id, doota, search, unique_id);
 
         
         printf("%d, %s, %s, %d, %d\n", ret, query, prefixs[i].c_str(), doota, search );
