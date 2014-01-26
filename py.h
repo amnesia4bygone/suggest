@@ -28,6 +28,8 @@ using namespace std;
 
 
 
+
+
 // 存储汉字query到拼音的结果. 由于多音字的存在, 所以多个结果.
 // "刘的华"的结果
 //     "liudehua"  "liu" "de" "hua"

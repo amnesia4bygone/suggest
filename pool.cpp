@@ -269,14 +269,14 @@ int PendingPool::queue_in(int offset)
 	timeval tv;
 	gettimeofday(&tv, NULL);
 	nSec = tv.tv_sec;
-        int sock_work;
+        //int sock_work = 0;
 
 
 	pthread_mutex_lock(&m_mutex);
 	m_aySocket[offset].nLastActive = nSec;
 	m_aySocket[offset].arriveTime = tv;
 	m_ayReady[m_nPut] = offset;
-	sock_work = m_aySocket[offset].nSock;
+	//sock_work = m_aySocket[offset].nSock;
 
 	if (++m_nPut >= m_queueLen)
 		m_nPut = 0;

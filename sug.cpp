@@ -20,6 +20,7 @@
 #include "py.h"
 #include "md5_64bit.h"
 #include "pool.h"
+#include "contents.h"
 
 
 
@@ -34,34 +35,9 @@
 using namespace std;
 
 
-
-class contents
-{
-public:
-    uint64 lists[32];
-    uint32 doota_num[32];  // 0, mean
-    uint32 search_num[32];  // 0, mean
-
-    uint32 used_num; 
-
-
-    int insert(uint64 query_id, uint32 doota, uint32 search);
-    contents();
-
-private:
-    uint32 min_doota;
-    uint32 min_doota_offset;
-    void find_min_offset(void);
-
-
-
-};
-
-
-
-
 typedef dense_hash_map<uint64, contents *, OwnHash> CHash;
 typedef dense_hash_map<uint64, contents *, OwnHash>::iterator CHashITE;
+
 
 
 
@@ -343,7 +319,7 @@ int tcpread_query(int connfd, char * request_query)
 
     strncpy(request_query, buf_unquote, strlen(buf_unquote) );
     
-    printf("\n------------------%s-----\n", request_query);
+    //printf("\n------------------%s-----\n", request_query);
 
     return 1;
 }
@@ -502,7 +478,23 @@ void * child_main(void* )
                 continue;
             }
             
-            //ret = sug(cmd, results, dr);
+            uint64 id = first_half_md5(cmd, strlen(cmd) );
+            CHashITE ite = g_index.find(id);
+            if (ite != g_index.end() )
+            {
+                contents * p = g_index[id];
+
+                for (unsigned int i =0; i < p->used_num; i++ )
+                {
+                    printf( "%d--%lld--%s--%d--%d\n" , 
+                         i , 
+                         p->lists[i], 
+                         g_querys[ p->lists[i] ] , 
+                         p->doota_num[i], 
+                         p->search_num[i] );
+                }
+            }
+
 
 
             tcpsendmsg(client, results);
@@ -521,54 +513,6 @@ void * child_main(void* )
 }    
 
 
-
-contents::contents()
-{
-    memset(this, 0, sizeof(contents) );
-}
-
-
-void  contents::find_min_offset(void)
-{
-    unsigned int tmp_doota = 999999999;
-    for(uint32 i=0; i<32; i++ )
-    {
-        if (tmp_doota < doota_num[i] )
-        {
-            tmp_doota = doota_num[i];
-            min_doota_offset = i;
-        }
-    } 
-    min_doota = doota_num[min_doota_offset];  
-}
-// -1, error
-// 0, skip
-// 1, success insert
-int contents::insert(uint64 query_id, uint32 doota, uint32 search)
-{
-
-    if (used_num < 32)
-    {
-        lists[used_num] = query_id;
-        doota_num[used_num] = doota;
-        search_num[used_num] = search;
-        used_num++;
-
-        find_min_offset();
-        return 1;
-    }
-
-
-    if (doota <= min_doota )
-        return 0;
-
-    lists[min_doota_offset] = query_id;
-    doota_num[min_doota_offset] = doota;
-    search_num[min_doota_offset] = search;    
-    find_min_offset();
-    return 1;
-
-}
 
 
 unsigned int insert_one_query(char * query, unsigned int doota, unsigned int search )
@@ -701,7 +645,11 @@ unsigned int insert_one_query(char * query, unsigned int doota, unsigned int sea
         {
             one = g_index[key_id];
         }
-        one->insert(query_id, doota, search);
+        int ret  = one->insert(query_id, doota, search);
+
+        
+        printf("%d, %s, %s, %d, %d\n", ret, query, prefixs[i].c_str(), doota, search );
+        one->debug();
     }
     
     return prefixs.size();
@@ -714,7 +662,7 @@ unsigned int build_index(void)
     g_querys.set_empty_key(0);
 
 
-    unsigned int len;
+    //unsigned int len;
     int readed_lines = 0 ;
 
     FILE * fp = fopen("conf/sug.query", "r");
@@ -728,7 +676,7 @@ unsigned int build_index(void)
     char buffer[256];
     char key[128];
     char value[128];
-    char * p = NULL;
+    //char * p = NULL;
 
     uint32 read_keys_num= 0;
 
@@ -789,8 +737,6 @@ unsigned int build_index(void)
     printf( "readed lines end %d %d\n",readed_lines, read_keys_num);
     fclose(fp);
     return 0;      
-
-
 
 }
 
