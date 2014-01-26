@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// 这个使用的地方比较多 单独存好了
+
 #include <google/dense_hash_map>
 #include <sparsehash/dense_hash_map>
 #include <openssl/md5.h>
@@ -42,6 +42,25 @@ struct OwnHash
     }   
 };
 
+
+class contents
+{
+public:
+    uint64 lists[32];
+    uint32 doota_num[32];  // 0, mean
+    uint32 search_num[32];  // 0, mean
+
+    uint32 used_num; 
+private:
+    uint32 min_doota;
+    uint32 min_search;
+};
+
+
+
+
+typedef dense_hash_map<uint64, contents *, OwnHash> CHash;
+typedef dense_hash_map<uint64, contents *, OwnHash>::iterator CHashITE;
 
 
 //T meads text

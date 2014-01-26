@@ -38,15 +38,17 @@ const unsigned int THREAD_NUMBER =  24;
 
 const unsigned int MAX_RESULT_LIST = 500;
 
-const unsigned int LM_N_GRAM =  3;
-const unsigned int IME_N_GRAM =  3;
-const double       LM_THRESHOLD = 50;
-
 unsigned int g_port = 2020; 
 
 PendingPool g_workpool;
 
+int debug = 1;
 
+
+CHash g_index = CHash(10000000);
+
+
+ 
 const char response_head[] = "HTTP/1.1 200 OK\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Length: ";
 
 
@@ -221,7 +223,6 @@ int tcpread_query(int connfd, char * request_query)
     //printf("tcp readquery in\n");
     char buf[MAX_LEN];
     memset(buf, 0, MAX_LEN);
-    int ret = 0;
 
 
     int n=0;
@@ -488,17 +489,222 @@ void * child_main(void* )
 }    
 
 
+unsigned int insert_one_query(char * query, unsigned int doota, unsigned int search )
+{
+
+    vector<string> prefixs;
+
+    
+
+    cn2py_segment segment(query);
+    segment.do_cn2py();
+    segment.debug();
+    
+    char * p_head = (char*) (segment.py_list  );
+    unsigned int query_len = strlen(p_head);
+
+
+
+    // 前缀 py 索引
+    for(unsigned int i=1 ; i<=query_len; i++ )
+    {
+        
+        string one(p_head, i );
+
+        prefixs.push_back(one);
+
+        //printf("%%pre  %s\n",  one.c_str() );
+
+    }
+
+    // 中缀 py 索引
+
+    char * p_blank = strstr( p_head,  " ");
+    while(p_blank != NULL)
+    {
+        char * p_mid_py_query = p_blank+1;
+        unsigned int mid_py_query_len = strlen( p_mid_py_query );
+
+        for(unsigned int i = 1; i<=mid_py_query_len; i++)
+        {
+            string one(p_mid_py_query, i );
+
+            prefixs.push_back(one);
+
+            //printf("%%mid  %s\n",  one.c_str() );            
+        }
+
+        p_blank = strstr( p_mid_py_query, " " );
+
+    }
+
+    // 前缀 汉字索引
+    for (unsigned int i=1; i<= segment.cn_list.size(); i++)
+    {
+        string one;
+        for (unsigned int j =0; j<i; j++)
+        {
+            one += segment.cn_list[j];
+        }
+        prefixs.push_back(one);
+        printf("%%cn pre  --%s--\n",  one.c_str() );
+
+    }
+
+
+    // 中缀, 汉子索引
+    unsigned int offset = 0;
+    unsigned int current_offset = 0;
+    unsigned int cn_len = segment.cn_list.size();
+
+    while(current_offset < cn_len)
+    {
+        if (  0 == strncmp(segment.cn_list[current_offset].c_str() , " ", 1 ) )
+            break;
+
+        current_offset++;
+    }
+    current_offset++; // skip blank
+    offset = current_offset;
+
+    while(offset < cn_len)
+    {
+        for(unsigned int i=1; i<=cn_len - offset; i++  )
+        {
+            string one;
+            for(unsigned int j=0; j<i; j++)
+                one += segment.cn_list[offset+j];
+            prefixs.push_back(one);
+            printf("%%cn mid pre  --%s--\n",  one.c_str() );
+        }
+
+        while(current_offset < cn_len)
+        {
+            if (  0 == strncmp(segment.cn_list[current_offset].c_str() , " ", 1 ) )
+                break;
+
+            current_offset++;
+        }  
+        offset = ++current_offset;     
+    }
+
+
+
+
+
+    for (unsigned int i =0; i<prefixs.size(); i++)
+        printf("---%s\n", prefixs[i].c_str() );
+
+/*
+    CHashITE ite;
+
+    ite = g_index.find(id);
+    if (ite == g_index.end() )
+    {
+        centents * one = (contents *) malloc( sizeof(contents) );
+
+    }
+    else
+    {
+
+    }
+      */  
+}
+
+
+unsigned int build_index(void)
+{
+
+    g_index.set_empty_key(0);
+
+    unsigned int len;
+    int readed_lines = 0 ;
+
+    FILE * fp = fopen("conf/sug.query", "r");
+    if (fp == NULL)
+    {   
+        _LOG("open cn2py data file error\n");
+        return -1; 
+    }   
+
+
+    char buffer[256];
+    char key[128];
+    char value[128];
+    char * p = NULL;
+
+    while (!feof(fp))
+    {   
+        memset(buffer, 0, 256);
+        memset(key, 0, 128);
+        memset(value, 0, 128); 
+
+        int doota = -1;
+        int search = -1;
+       
+
+        if ( NULL == fgets(buffer, 256, fp))
+        {   
+                fclose(fp);
+                return -1;    
+        }   
+        buffer[255] = '\0';
+        //printf("--%s---\n", buffer);
+
+        char * sep;
+        char * end;
+        //len = strlen(buffer);
+
+
+        sep = strstr(buffer, "\t");
+        if (sep == NULL)
+            continue;
+
+        strncpy(key, buffer, (unsigned int) (sep-buffer) );
+
+        doota = atoi( sep+1 );
+
+        end = strstr(sep+1, "\t");
+        if (end == NULL)
+            continue;
+        search = atoi(end+1 );           
+        
+
+        if (debug )
+            printf("---%s---%d--%d--\n", key, doota, search);
+        
+
+        // use it for skep "keywords    doota_num   user_search_times"
+        if ( doota == 0 && search == 0 )
+            continue;
+
+        insert_one_query(key, doota, search);
+
+        
+        if (debug)
+        {
+            readed_lines++;
+            if (readed_lines > 10)
+                return 0;
+        }
+    }   
+    //fprintf(stderr, "readed lines end %d\n",readed_lines);
+    fclose(fp);
+    return 0;      
+
+
+
+}
+
 int main(int argc,char* argv[])
 {
 
 
-    unsigned long stack_size = 0;
-    pthread_attr_t thread_attr;
-    int status = pthread_attr_init (&thread_attr);
-    status = pthread_attr_getstacksize (&thread_attr, &stack_size);
-    printf("stack size is %ld\n", stack_size);
-
-
+    //unsigned long stack_size = 0;
+    //pthread_attr_t thread_attr;
+    //int status = pthread_attr_init (&thread_attr);
+    //status = pthread_attr_getstacksize (&thread_attr, &stack_size);
+    //printf("stack size is %ld\n", stack_size);
 
 
     signal(SIGUSR2,  SIG_IGN);
@@ -514,7 +720,7 @@ int main(int argc,char* argv[])
 
 
 
-
+    build_index();
 
 
 

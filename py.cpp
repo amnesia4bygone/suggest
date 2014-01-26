@@ -74,12 +74,15 @@ int cn2py_segment::do_cn2py(void)
 
                 strncpy( buf,  p,  this_len );
 
-                if ( this_len > 1)
+                if( ( this_len > 1) || (this_len == 1 && buf[0] == ' ') )
                 {
-                        if (py_word.length() > 0 )
-                                cn_list.push_back(py_word);
-                        py_word = "";
+                    if (py_word.length() > 0 )
+                            cn_list.push_back(py_word);
+                    py_word = "";
  
+
+                    if (this_len != 1)
+                    {
                         uint64 id = first_half_md5(buf, this_len );
                         printf("%lld %s, %d\n", id, buf, this_len);
 
@@ -92,8 +95,14 @@ int cn2py_segment::do_cn2py(void)
                         }
                         strcat(py_list, table_cn2py[id] ); 
                         cn_list.push_back( string( buf, this_len )  );
+                    }
+                    else
+                    {
+                        strcat(py_list, " " ); 
+                        cn_list.push_back( string( buf, this_len )  );                        
+                    }
                 }
-                else
+                else 
                 {
                         py_word += buf;
 
@@ -199,7 +208,7 @@ void cn2py_segment::load_dict(void)
 void cn2py_segment::debug(void)
 {
     printf("py_list %s\n", py_list);
-    for (int i=0; i<cn_list.size(); i++)
+    for (unsigned int i=0; i<cn_list.size(); i++)
         printf("%d cn_list --%s--\n",  (int)cn_list.size(), cn_list[i].c_str() );
 }
 

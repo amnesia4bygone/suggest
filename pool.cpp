@@ -269,7 +269,8 @@ int PendingPool::queue_in(int offset)
 	timeval tv;
 	gettimeofday(&tv, NULL);
 	nSec = tv.tv_sec;
-	int sock_work;
+        int sock_work;
+
 
 	pthread_mutex_lock(&m_mutex);
 	m_aySocket[offset].nLastActive = nSec;
