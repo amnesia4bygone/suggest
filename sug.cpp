@@ -493,6 +493,20 @@ void * child_main(void* )
                          p->lists[i].doota, 
                          p->lists[i].search,
                          p->lists[i].unique_id );
+
+                    int dup_flag = 0;
+                    for (unsigned int j =0; j<i; j++)
+                    {
+                        if ( p->lists[i].unique_id == p->lists[j].unique_id )
+                        {
+                            dup_flag = 1;
+                            break;
+                        }
+                    }
+
+                    if (dup_flag == 0)
+                        results.push_back( string(g_querys[ p->lists[i].id] ) );
+
                 }
             }
 
