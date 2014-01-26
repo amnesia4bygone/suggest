@@ -74,7 +74,7 @@ unsigned int g_port = 2020;
 
 PendingPool g_workpool;
 
-int debug = 1;
+int debug = 0;
 
 
 CHash g_index =  CHash(10000000);
@@ -287,7 +287,7 @@ int tcpread_query(int connfd, char * request_query)
     }
     buf[MAX_LEN -1] = '\0';
 
-    printf("%s\n", buf);
+    if(debug) printf("%s\n", buf);
 
     if (read_len > (unsigned int)(MAX_LEN-10) || read_len == 0 )
     {
@@ -415,7 +415,7 @@ int tcpsendmsg(int connfd,  vector<string>&results)
     memcpy( send_buf + len, tmp_buf, nLen );
 
 
-    printf("send_buf --%s--\n", send_buf);
+    if(debug) printf("send_buf --%s--\n", send_buf);
 
     if((n = write(connfd, send_buf, len+nLen))<0)
     {
@@ -538,7 +538,8 @@ void  contents::find_min_offset(void)
             tmp_doota = doota_num[i];
             min_doota_offset = i;
         }
-    }   
+    } 
+    min_doota = doota_num[min_doota_offset];  
 }
 // -1, error
 // 0, skip
@@ -577,7 +578,7 @@ unsigned int insert_one_query(char * query, unsigned int doota, unsigned int sea
     
     cn2py_segment segment(query);
     segment.do_cn2py();
-    segment.debug();
+    if(debug) segment.debug();
     
     char * p_head = (char*) (segment.py_list  );
     unsigned int query_len = strlen(p_head);
@@ -632,7 +633,7 @@ unsigned int insert_one_query(char * query, unsigned int doota, unsigned int sea
                 one += segment.cn_list[j];
             }
             prefixs.push_back(one);
-            printf("%%cn pre  --%s--\n",  one.c_str() );
+            if(debug) printf("%%cn pre  --%s--\n",  one.c_str() );
 
         }
 
@@ -660,7 +661,7 @@ unsigned int insert_one_query(char * query, unsigned int doota, unsigned int sea
                 for(unsigned int j=0; j<i; j++)
                     one += segment.cn_list[offset+j];
                 prefixs.push_back(one);
-                printf("%%cn mid pre  --%s--\n",  one.c_str() );
+                if(debug) printf("%%cn mid pre  --%s--\n",  one.c_str() );
             }
 
             while(current_offset < cn_len)
@@ -682,6 +683,7 @@ unsigned int insert_one_query(char * query, unsigned int doota, unsigned int sea
 
 
 
+
     for (unsigned int i=0; i<prefixs.size(); i++)
     {
         CHashITE ite;
@@ -692,7 +694,7 @@ unsigned int insert_one_query(char * query, unsigned int doota, unsigned int sea
         contents * one = NULL;
         if (ite == g_index.end() )
         {
-            one = (contents *) malloc( sizeof(contents) );
+            one = new contents();
             g_index[key_id] = one;
         }
         else
@@ -702,7 +704,7 @@ unsigned int insert_one_query(char * query, unsigned int doota, unsigned int sea
         one->insert(query_id, doota, search);
     }
     
-    return 0;
+    return prefixs.size();
 }
 
 
@@ -728,6 +730,8 @@ unsigned int build_index(void)
     char value[128];
     char * p = NULL;
 
+    uint32 read_keys_num= 0;
+
     while (!feof(fp))
     {   
         memset(buffer, 0, 256);
@@ -740,8 +744,8 @@ unsigned int build_index(void)
 
         if ( NULL == fgets(buffer, 256, fp))
         {   
-                fclose(fp);
-                return -1;    
+              
+                break;   
         }   
         buffer[255] = '\0';
         //printf("--%s---\n", buffer);
@@ -773,17 +777,16 @@ unsigned int build_index(void)
         if ( doota == 0 && search == 0 )
             continue;
 
-        insert_one_query(key, doota, search);
+        read_keys_num += insert_one_query(key, doota, search);
 
-        
+        readed_lines++;
         if (debug)
         {
-            readed_lines++;
             if (readed_lines > 10)
                 return 0;
         }
     }   
-    //fprintf(stderr, "readed lines end %d\n",readed_lines);
+    printf( "readed lines end %d %d\n",readed_lines, read_keys_num);
     fclose(fp);
     return 0;      
 
@@ -793,19 +796,9 @@ unsigned int build_index(void)
 
 int main(int argc,char* argv[])
 {
-
-
-    //unsigned long stack_size = 0;
-    //pthread_attr_t thread_attr;
-    //int status = pthread_attr_init (&thread_attr);
-    //status = pthread_attr_getstacksize (&thread_attr, &stack_size);
-    //printf("stack size is %ld\n", stack_size);
-
-
-    signal(SIGUSR2,  SIG_IGN);
-    signal(SIGUSR1,  SIG_IGN);
+    //signal(SIGUSR2,  SIG_IGN);
+    //signal(SIGUSR1,  SIG_IGN);
     signal(SIGPIPE,  SIG_IGN);
-
 
     
     cn2py_segment g_dcit_cs; // init dict just here

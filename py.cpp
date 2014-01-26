@@ -70,7 +70,7 @@ int cn2py_segment::do_cn2py(void)
                 char buf[8];
                 memset(buf, 0, 8);
                 
-                printf("--%s--%d\n", buf, this_len);
+                //printf("--%s--%d\n", buf, this_len);
 
                 strncpy( buf,  p,  this_len );
 
@@ -84,7 +84,7 @@ int cn2py_segment::do_cn2py(void)
                     if (this_len != 1)
                     {
                         uint64 id = first_half_md5(buf, this_len );
-                        printf("%lld %s, %d\n", id, buf, this_len);
+                        //printf("%lld %s, %d\n", id, buf, this_len);
 
                         THashITE it;
                         it = table_cn2py.find(id);
@@ -186,7 +186,7 @@ int cn2py_segment::fullfil_hash(const char * file_name, THash &table)
                 }
 
 
-                printf("---%s---%s--\n", key, value);
+                //printf("---%s---%s--\n", key, value);
                 
                 table[first_half_md5(key, strlen(key))] = value;
                 readed_lines++;
