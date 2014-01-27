@@ -486,7 +486,7 @@ void * child_main(void* )
 
                 for (unsigned int i =0; i < p->used_num; i++ )
                 {
-                    if(debug) 
+                    
                     {
 
                         printf( "%d--%lld--%s--%d--%d--%lld---%d\n" , 
@@ -546,6 +546,16 @@ void * child_main(void* )
             for(unsigned int i=0; i< 10 - first_used && second_used < second_size; i++, second_used++)
             {
                 results.push_back( second_type_results[i] );
+            }
+
+            // 不足10个, 队列1补齐
+            if (results.size() < 10)
+            {
+                unsigned int used = results.size();
+                for(unsigned int i= used; i<10 && first_used < first_size; i++, first_used++)
+                {
+                    results.push_back( first_type_results[i] );
+                }                
             }
 
 

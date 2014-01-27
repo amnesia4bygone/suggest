@@ -18,7 +18,15 @@ bool vector_comp (one_query i, one_query j)
     else if  (i.type < j.type)
         return false;
     else
-        return (i.doota > j.doota); 
+    {
+        // doota都很丰富或者都很贫瘠, 就看频次去吧
+        if( (i.doota >= 320 && j.doota >= 320)  ||  (i.doota < 20 && j.doota < 20) )
+        {
+            return (i.search > j.search);
+        } 
+        else
+            return (i.doota > j.doota); 
+    }
 }
 
 

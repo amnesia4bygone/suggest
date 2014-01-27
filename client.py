@@ -33,4 +33,9 @@ def myhttp( query):
     return data
 
 
-print myhttp("nvzhuang")
+print myhttp("maoyi")
+print myhttp("毛衣")
+print myhttp("yurong")
+print myhttp("羽绒服")
+print myhttp("秋冬")
+print myhttp("qiudong")
