@@ -486,13 +486,14 @@ void * child_main(void* )
 
                 for (unsigned int i =0; i < p->used_num; i++ )
                 {
-                    printf( "%d--%lld--%s--%d--%d--%lld\n" , 
+                    printf( "%d--%lld--%s--%d--%d--%lld---%d\n" , 
                          i , 
                          p->lists[i].id, 
                          g_querys[ p->lists[i].id ] , 
                          p->lists[i].doota, 
                          p->lists[i].search,
-                         p->lists[i].unique_id );
+                         p->lists[i].unique_id,
+                         p->lists[i].type );
 
                     int dup_flag = 0;
                     for (unsigned int j =0; j<i; j++)
@@ -557,7 +558,7 @@ uint32 strip_blank ( char * query, char * new_query, uint32 len )
 unsigned int insert_one_query(char * query, unsigned int doota, unsigned int search )
 {
     vector<string> prefixs;
-
+    vector<MATCH_TYPE> types;
     
     cn2py_segment segment(query);
     segment.do_cn2py();
@@ -581,6 +582,7 @@ unsigned int insert_one_query(char * query, unsigned int doota, unsigned int sea
             string one(p_head, i );
 
             prefixs.push_back(one);
+            types.push_back(PY_PRE);
 
             //printf("%%pre  %s\n",  one.c_str() );
 
@@ -599,6 +601,7 @@ unsigned int insert_one_query(char * query, unsigned int doota, unsigned int sea
                 string one(p_mid_py_query, i );
 
                 prefixs.push_back(one);
+                types.push_back(PY_MID);
 
                 //printf("%%mid  %s\n",  one.c_str() );            
             }
@@ -616,6 +619,7 @@ unsigned int insert_one_query(char * query, unsigned int doota, unsigned int sea
                 one += segment.cn_list[j];
             }
             prefixs.push_back(one);
+            types.push_back(CN_PRE);
             if(debug) printf("%%cn pre  --%s--\n",  one.c_str() );
 
         }
@@ -644,6 +648,7 @@ unsigned int insert_one_query(char * query, unsigned int doota, unsigned int sea
                 for(unsigned int j=0; j<i; j++)
                     one += segment.cn_list[offset+j];
                 prefixs.push_back(one);
+                types.push_back(CN_MID);
                 if(debug) printf("%%cn mid pre  --%s--\n",  one.c_str() );
             }
 
@@ -688,7 +693,7 @@ unsigned int insert_one_query(char * query, unsigned int doota, unsigned int sea
         {
             one = g_index[key_id];
         }
-        int ret  = one->insert(query_id, doota, search, unique_id);
+        int ret  = one->insert(query_id, doota, search, unique_id, types[i] );
 
         
         printf("%d, %s, %s, %d, %d\n", ret, query, prefixs[i].c_str(), doota, search );

@@ -10,6 +10,17 @@ using namespace std;
 
 
 
+// 定义一个 query 和一个索引, 是什么类型匹配的.
+typedef enum
+{
+    TYPE_NULL = 0,
+    CN_MID = 1,
+    CN_PRE = 3,
+    PY_MID = 2,
+    PY_PRE = 4
+}MATCH_TYPE;
+
+
 class one_query
 {
 public:
@@ -18,6 +29,7 @@ public:
     uint32 search;
 
     uint64 unique_id;
+    MATCH_TYPE  type;
     one_query();
     
 };
@@ -29,7 +41,8 @@ public:
     vector<one_query> lists;
     uint32 used_num; 
 
-    int insert(uint64 query_id, uint32 doota, uint32 search, uint64 uid); // uid is used skpi querys which only diff in blank
+    // uid is used skpi querys which only diff in blank
+    int insert(uint64 query_id, uint32 doota, uint32 search, uint64 uid, MATCH_TYPE  type); 
     contents();
     void debug(void);
 

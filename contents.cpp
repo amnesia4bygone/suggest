@@ -11,13 +11,22 @@
 
 
 
-bool vector_comp (one_query i, one_query j) { return (i.doota > j.doota); }
+bool vector_comp (one_query i, one_query j) 
+{
+    if (i.type > j.type)
+        return true;
+    else if  (i.type < j.type)
+        return false;
+    else
+        return (i.doota > j.doota); 
+}
 
 
 one_query::one_query()
 {
     // careful use it, when it is poly stat
     memset(this, 0, sizeof(one_query) );
+    type = TYPE_NULL;
 }
 
 
@@ -61,7 +70,7 @@ void  contents::find_min_offset(void)
 // -1, error
 // 0, skip
 // 1, success insert
-int contents::insert(uint64 query_id, uint32 doota, uint32 search, uint64 uid)
+int contents::insert(uint64 query_id, uint32 doota, uint32 search, uint64 uid,  MATCH_TYPE  type)
 {
 
     if (used_num < 32)
@@ -70,6 +79,7 @@ int contents::insert(uint64 query_id, uint32 doota, uint32 search, uint64 uid)
         lists[used_num].doota = doota;
         lists[used_num].search = search;
         lists[used_num].unique_id = uid;
+        lists[used_num].type = type;
         used_num++;
 
         sort(lists.begin(), lists.end(), vector_comp);
@@ -86,6 +96,7 @@ int contents::insert(uint64 query_id, uint32 doota, uint32 search, uint64 uid)
     lists[min_doota_offset].doota = doota;
     lists[min_doota_offset].search = search;  
     lists[min_doota_offset].unique_id = uid;  
+    lists[min_doota_offset].type = type;  
     
     sort(lists.begin(), lists.end(), vector_comp);
     find_min_offset();

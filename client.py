@@ -33,4 +33,4 @@ def myhttp( query):
     return data
 
 
-myhttp("nvzhuang")
+print myhttp("nvzhuang")
