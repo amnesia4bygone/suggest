@@ -39,22 +39,18 @@ typedef dense_hash_map<uint64, contents *, OwnHash> CHash;
 typedef dense_hash_map<uint64, contents *, OwnHash>::iterator CHashITE;
 
 
-
-
 const unsigned int MAX_LEN = 1024;
 const unsigned int THREAD_NUMBER =  24;
 
-const unsigned int MAX_RESULT_LIST = 500;
-
 unsigned int g_port = 2020; 
-
 PendingPool g_workpool;
 
 int debug = 0;
 
-
-CHash g_index =  CHash(10000000);
-THash g_querys = THash(10000000);
+const unsigned int MAX_INDEX_SIZE = 10000000;
+const unsigned int MAX_QUERY_SIZE = 1000000;
+CHash g_index =  CHash(MAX_INDEX_SIZE);
+THash g_querys = THash(MAX_QUERY_SIZE);
 
  
 const char response_head[] = "HTTP/1.1 200 OK\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Length: ";
@@ -461,6 +457,8 @@ void * child_main(void* )
         try
         {
             vector<string> results;
+            vector<string> first_type_results;
+            vector<string> second_type_results;
 
             if (!(ret = g_workpool.work_fetch_item(handle, client, queuelength, wait_time)))
                 continue;
@@ -484,16 +482,24 @@ void * child_main(void* )
             {
                 contents * p = g_index[id];
 
+                MATCH_TYPE first_type = TYPE_NULL;
+
                 for (unsigned int i =0; i < p->used_num; i++ )
                 {
-                    printf( "%d--%lld--%s--%d--%d--%lld---%d\n" , 
-                         i , 
-                         p->lists[i].id, 
-                         g_querys[ p->lists[i].id ] , 
-                         p->lists[i].doota, 
-                         p->lists[i].search,
-                         p->lists[i].unique_id,
-                         p->lists[i].type );
+                    {
+
+                        printf( "%d--%lld--%s--%d--%d--%lld---%d\n" , 
+                             i , 
+                             p->lists[i].id, 
+                             g_querys[ p->lists[i].id ] , 
+                             p->lists[i].doota, 
+                             p->lists[i].search,
+                             p->lists[i].unique_id,
+                             p->lists[i].type );
+                    }
+
+                    if (first_type == TYPE_NULL)
+                        first_type = p->lists[i].type;
 
                     int dup_flag = 0;
                     for (unsigned int j =0; j<i; j++)
@@ -505,11 +511,42 @@ void * child_main(void* )
                         }
                     }
 
-                    if (dup_flag == 0)
-                        results.push_back( string(g_querys[ p->lists[i].id] ) );
+                    // 过滤原串
+                    if ( strlen(g_querys[ p->lists[i].id]) == strlen(cmd)    &&   0 == strcmp(cmd, g_querys[ p->lists[i].id])  )
+                        continue; 
+
+
+
+                    if (dup_flag == 0 )
+                    {
+                        if (  p->lists[i].type == first_type )
+                        {
+                            first_type_results.push_back( string(g_querys[ p->lists[i].id] ) );
+                        }
+                        else
+                        {
+                            second_type_results.push_back( string(g_querys[ p->lists[i].id] ) );
+                        }
+                    }
 
                 }
             }
+
+            unsigned int first_used = 0;
+            unsigned int first_size = first_type_results.size();
+
+            for(unsigned int i=0; i<6 && first_used < first_size; i++, first_used++)
+            {
+                results.push_back( first_type_results[i] );
+            }
+
+            unsigned int second_used = 0;
+            unsigned int second_size = second_type_results.size();
+            for(unsigned int i=0; i< 10 - first_used && second_used < second_size; i++, second_used++)
+            {
+                results.push_back( second_type_results[i] );
+            }
+
 
 
 
@@ -745,6 +782,13 @@ unsigned int build_index(void)
         }   
         buffer[255] = '\0';
         //printf("--%s---\n", buffer);
+
+
+        // 过滤渣数据
+        char * p1 = strstr(buffer, "^");
+        char * p2 = strstr(buffer, "$");
+        if (p1 != NULL && p2 != NULL)
+            continue;
 
         char * sep;
         char * end;
