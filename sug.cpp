@@ -486,6 +486,7 @@ void * child_main(void* )
 
                 for (unsigned int i =0; i < p->used_num; i++ )
                 {
+                    if(debug) 
                     {
 
                         printf( "%d--%lld--%s--%d--%d--%lld---%d\n" , 
@@ -574,16 +575,17 @@ uint32 strip_blank ( char * query, char * new_query, uint32 len )
         uint32 blank_number = 0;
         for (uint32 i =0; i< len; i++)
         {
-                if (*p != ' ')
+                if (*p == ' ' || *p == '\'' || *p == '.' || *p == ',' )
+                {
+                        p++;
+                        blank_number++;
+                }
+                else
                 {
                         *dest = *p;
                         p++;
                         dest++;
-                }
-                else
-                {
-                        p++;
-                        blank_number++;
+
                 }
         }
         *dest = '\0';
@@ -733,8 +735,8 @@ unsigned int insert_one_query(char * query, unsigned int doota, unsigned int sea
         int ret  = one->insert(query_id, doota, search, unique_id, types[i] );
 
         
-        printf("%d, %s, %s, %d, %d\n", ret, query, prefixs[i].c_str(), doota, search );
-        one->debug();
+        if (debug) printf("%d, %s, %s, %d, %d\n", ret, query, prefixs[i].c_str(), doota, search );
+        if (debug) one->debug();
     }
     
     return prefixs.size();
