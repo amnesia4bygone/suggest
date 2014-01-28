@@ -27,7 +27,7 @@ using namespace std;
 
 
 
-
+int  is_cn_en(const char * p);
 
 
 // 存储汉字query到拼音的结果. 由于多音字的存在, 所以多个结果.

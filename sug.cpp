@@ -443,6 +443,81 @@ void request_server(void)
 
 
 
+
+int parse_query_term( vector<int> & results ,  const char * query,  uint32 len)
+{
+    unsigned int i = 0;
+
+    
+
+    while(i < len)
+    {
+        char * p =  ( char* ) (query + i);
+
+        int one_word_len = is_cn_en(p);
+
+        //if (one_word_len <= 0 )
+        //    return -1;
+
+        // skip 
+        if (one_word_len == 1)
+        { 
+            if (*p == ' ' || *p == ',' || *p == '.' || *p == '?' )
+            {
+                i++;
+                continue;
+            }
+           
+        }
+
+        if (one_word_len == 3)
+        { 
+            if (    0 == strncmp(p, "，", 3) ||
+                    0 == strncmp(p, "。", 3) ||
+                    0 == strncmp(p, "《", 3) ||
+                    0 == strncmp(p, "》", 3) ||
+                    0 == strncmp(p, "？", 3) ||
+                    0 == strncmp(p, "：", 3) ||
+                    0 == strncmp(p, "；", 3) ||
+                    0 == strncmp(p, "￥", 3) 
+               )
+            {
+                i = i+3;
+                continue;
+            }
+        }        
+
+        char buf[8];
+        memset(buf, 0, 8);
+
+        for(int j=0; j<one_word_len; j++)
+        {
+            memcpy(buf+j, p+j, 1);
+        }
+
+        int tmp = 0;
+        memcpy(&tmp, buf, 4);
+
+        results.push_back(tmp);
+
+        i += one_word_len;
+    }
+    
+    sort(results.begin(),  results.end() );
+
+    return 0;
+}
+
+
+unsigned int min(unsigned int a , unsigned int b)
+{
+    if(a<b) 
+        return a;
+    else 
+        return b;
+}
+
+
 void * child_main(void* )
 {   
     int     ret = 0;    // return value
@@ -459,6 +534,7 @@ void * child_main(void* )
             vector<string> results;
             vector<string> first_type_results;
             vector<string> second_type_results;
+            vector< vector<int> > query_term_list;
 
             if (!(ret = g_workpool.work_fetch_item(handle, client, queuelength, wait_time)))
                 continue;
@@ -489,7 +565,7 @@ void * child_main(void* )
                     
                     {
 
-                        printf( "%d--%lld--%s--%d--%d--%lld---%d\n" , 
+                        fprintf(stderr,  "%d--%lld--%s--%d--%d--%lld---%d\n" , 
                              i , 
                              p->lists[i].id, 
                              g_querys[ p->lists[i].id ] , 
@@ -511,52 +587,80 @@ void * child_main(void* )
                             break;
                         }
                     }
+                    if (dup_flag == 1 )
+                        continue;
+
+
+                    unsigned int one_query_len = strlen( g_querys[ p->lists[i].id] );
 
                     // 过滤原串
-                    if ( strlen(g_querys[ p->lists[i].id]) == strlen(cmd)    &&   0 == strcmp(cmd, g_querys[ p->lists[i].id])  )
+                    if ( one_query_len == strlen(cmd)    &&   0 == strncmp(cmd, g_querys[ p->lists[i].id], one_query_len)  )
                         continue; 
 
+                    // 过滤 "秋装连衣裙"  "连衣裙女装" 这样的 query。 规则就是字不论顺序全部一模一样
+                    vector<int > one_query_term ;
+                    parse_query_term(one_query_term, g_querys[ p->lists[i].id],  one_query_len );
 
-
-                    if (dup_flag == 0 )
+                    vector< vector<int> >::iterator it;
+                    for(it = query_term_list.begin(); it != query_term_list.end(); it++ )
                     {
-                        if (  p->lists[i].type == first_type )
+                        if (*it ==  one_query_term )
                         {
-                            first_type_results.push_back( string(g_querys[ p->lists[i].id] ) );
+                            printf("!!!!dup --%s-- \n",  g_querys[ p->lists[i].id]);
+                            dup_flag = 1;
+                            break;
                         }
-                        else
-                        {
-                            second_type_results.push_back( string(g_querys[ p->lists[i].id] ) );
-                        }
+                    } 
+                    if (dup_flag == 1)
+                        continue;
+
+                    query_term_list.push_back( one_query_term );
+ 
+
+                    
+                    // 没有重复
+                    if (  p->lists[i].type == first_type )
+                    {
+                        first_type_results.push_back( string(g_querys[ p->lists[i].id] ) );
                     }
+                    else
+                    {
+                        second_type_results.push_back( string(g_querys[ p->lists[i].id] ) );
+                    }
+                    
 
                 }
             }
 
-            unsigned int first_used = 0;
-            unsigned int first_size = first_type_results.size();
 
-            for(unsigned int i=0; i<6 && first_used < first_size; i++, first_used++)
+            unsigned int first_size = first_type_results.size();
+            unsigned int first_should_used = 0;
+
+            unsigned int second_size = second_type_results.size(); 
+            unsigned int second_should_used = 0;
+
+
+            if (  second_size >= 4 )
+            {
+                first_should_used = min( 6,  first_size );
+            }
+            else
+            {
+                first_should_used = min(first_size,  10-second_size);
+            }
+            second_should_used = min( second_size, 10 - first_should_used );
+
+
+            for(unsigned int i=0; i< first_should_used; i++)
             {
                 results.push_back( first_type_results[i] );
             }
-
-            unsigned int second_used = 0;
-            unsigned int second_size = second_type_results.size();
-            for(unsigned int i=0; i< 10 - first_used && second_used < second_size; i++, second_used++)
+           
+            for(unsigned int i=0; i< second_should_used; i++)
             {
                 results.push_back( second_type_results[i] );
             }
 
-            // 不足10个, 队列1补齐
-            if (results.size() < 10)
-            {
-                unsigned int used = results.size();
-                for(unsigned int i= used; i<10 && first_used < first_size; i++, first_used++)
-                {
-                    results.push_back( first_type_results[i] );
-                }                
-            }
 
 
 
@@ -610,7 +714,10 @@ unsigned int insert_one_query(char * query, unsigned int doota, unsigned int sea
     vector<MATCH_TYPE> types;
     
     cn2py_segment segment(query);
-    segment.do_cn2py();
+    int ret = segment.do_cn2py();
+    if (ret == -1)
+        return 0;
+
     if(debug) segment.debug();
     
     char * p_head = (char*) (segment.py_list  );
@@ -832,11 +939,6 @@ unsigned int build_index(void)
         read_keys_num += insert_one_query(key, doota, search);
 
         readed_lines++;
-        if (debug)
-        {
-            if (readed_lines > 10)
-                return 0;
-        }
     }   
     printf( "readed lines end %d %d\n",readed_lines, read_keys_num);
     fclose(fp);

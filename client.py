@@ -24,7 +24,7 @@ def myhttp( query):
     conn = ''
     r1 = ''
     data = ''
-    conn = httplib.HTTPConnection("192.168.132.121","2020")
+    conn = httplib.HTTPConnection("127.0.0.1","2020")
     conn.request("GET", url, "", head)
     r1 = conn.getresponse()
     data = r1.read()

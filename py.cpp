@@ -90,7 +90,7 @@ int cn2py_segment::do_cn2py(void)
                         it = table_cn2py.find(id);
                         if (it == table_cn2py.end() )
                         {
-                                printf("!!!!!!!!!!!!!!!!!miss word --%s--\n", buf);
+                                //printf("!!!!!!!!!!!!!!!!!miss word --%s--\n", buf);
                                 return -1;
                         }
                         strcat(py_list, table_cn2py[id] ); 
